@@ -22,29 +22,52 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil3.compose.AsyncImagePainter.State.Empty.painter
+import coil3.compose.rememberAsyncImagePainter
+import com.example.myapplication.UserDatabase.Companion.getDatabase
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 fun MessageScreen(navController: NavController) {
+    val context = LocalContext.current
+    val database = remember { getDatabase(context) }
+    var name by remember { mutableStateOf("Guest") }
+
+    LaunchedEffect(Unit) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val userData = database.UserDao().getUser()
+            if (userData != null) {
+                name = userData.userName
+            }
+        }
+    }
+
     Column {
+        Spacer(modifier = Modifier.height(15.dp))
         Button(onClick = { navController.navigate("DefaultScreen") {
             popUpTo("DefaultScreen") {
                 inclusive = true
             }
         }}){
-            Text(text = "Go to home page")
+            Text(text = "SETTINGS")
         }
-        Conversation(SampleData.conversationSample)
+        Conversation(SampleData.getConversationSample(name))
     }
 }
 
@@ -52,9 +75,13 @@ data class Msg(val author: String, val body: String)
 
 @Composable
 fun MsgCard(msg: Msg) {
+    val context = LocalContext.current
+    val imageFile = File(context.filesDir, "pfp.jpg")
+    val painter = rememberAsyncImagePainter(imageFile)
+
     Row {
         Image(
-            painter = painterResource(id = R.drawable.test),
+            painter = painter,
             contentDescription = "Contact profile picture",
             modifier = Modifier
                 .size(40.dp)
@@ -101,13 +128,13 @@ fun Conversation(messages: List<Msg>) {
     }
 }
 
-@Preview
+/*@Preview
 @Composable
 fun PreviewConversation() {
     MyApplicationTheme {
         Conversation(SampleData.conversationSample)
     }
-}
+}*/
 
 //@Preview(name = "Light Mode")
 
