@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -32,31 +33,71 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.room.RoomDatabase
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.InputStreamReader
+import java.net.URL
+import javax.net.ssl.HttpsURLConnection
 
 class MainActivity : ComponentActivity(), SensorEventListener {
-
     private lateinit var sensorManager: SensorManager
     private var lux: Sensor? = null
     private var stringLux: String = "huh?"
+    private var stringEur: String = "..."
+    private var stringUsd: String = "..."
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setSensors()
+        installSplashScreen().apply {
+            fetchData().start()
+        }
         setContent {
             MyApplicationTheme {
                 val navController = rememberNavController()
-                NavHost(navController = navController, startDestination = "DefaultScreen") {
+                NavHost(navController = navController, startDestination = "ExchangeRates") {
                     composable("DefaultScreen") {
-                        Default(navController, stringLux)
+                        Default(navController, stringLux, stringEur, stringUsd)
                     }
                     composable("MessageScreen") {
                         MessageScreen(navController)
                     }
+                    composable("ExchangeRates") {
+                        ExchangeRate(navController, stringLux, stringEur, stringUsd)
+                    }
                 }
+            }
+        }
+    }
+
+    private fun fetchData(): Thread {
+        return Thread {
+            val url = URL("https://open.er-api.com/v6/latest/eur")
+            val connection = url.openConnection() as HttpsURLConnection
+
+            if(connection.responseCode == 200) {
+                val inputSystem = connection.inputStream
+                val inputStreamReader = InputStreamReader(inputSystem, "UTF-8")
+                val request = Gson().fromJson(inputStreamReader, Request::class.java)
+                update(request)
+                inputStreamReader.close()
+                inputSystem.close()
+            }
+            else {
+                stringEur = "Connection failed..."
+                stringUsd = "Connection failed..."
+            }
+        }
+    }
+
+    private fun update(request: Request) {
+        runOnUiThread {
+            kotlin.run {
+                stringEur = String.format("EUR: %.2f", request.rates.EUR)
+                stringUsd = String.format("USD: %.2f", request.rates.USD)
             }
         }
     }

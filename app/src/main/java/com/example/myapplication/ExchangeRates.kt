@@ -56,24 +56,9 @@ import java.io.File
 import java.io.FileOutputStream
 
 @Composable
-fun Default(navController: NavController, stringLux: String, stringEur: String, stringUsd: String) {
+fun ExchangeRate(navController: NavController, stringLux: String, stringEur: String, stringUsd: String) {
     val context = LocalContext.current
     val database = remember { getDatabase(context) }
-    var name by remember { mutableStateOf("") }
-    var imageFile = File(context.filesDir, "pfp.jpg")
-    /*var imageFile by remember { mutableStateOf(File(context.filesDir, "pfp.jpg")) }*/
-    var updateImage by remember { mutableStateOf(false) }
-    val pickMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        uri?.let {imageUri ->
-            val inputStream = context.contentResolver.openInputStream(imageUri)
-            val outputFile = File(context.filesDir, "pfp.jpg")
-            FileOutputStream(outputFile).use { outputStream ->
-                inputStream?.copyTo(outputStream)
-            }
-            imageFile = outputFile
-            updateImage = !updateImage
-        }
-    }
     createNotificationChannel(context)
     var notificationPermission by remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -93,24 +78,11 @@ fun Default(navController: NavController, stringLux: String, stringEur: String, 
         }
     )
 
-    LaunchedEffect(Unit) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val userData = database.UserDao().getUser()
-            if (userData != null) {
-                name = userData.userName
-            }
-        }
-    }
-    val painter = if (updateImage) {
-        rememberAsyncImagePainter(imageFile)
-    } else {
-        rememberAsyncImagePainter(imageFile)
-    }
 
     Column {
         Spacer(modifier = Modifier.height(15.dp))
-        Button(onClick = { navController.navigate("ExchangeRates") }) {
-            Text(text = "RATES")
+        Button(onClick = { navController.navigate("DefaultScreen") }) {
+            Text(text = "SETTINGS")
         }
     }
     Column(
@@ -118,31 +90,11 @@ fun Default(navController: NavController, stringLux: String, stringEur: String, 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Image(
-            painter = painter,
-            contentDescription = "pfp",
-            modifier = Modifier
-                .size(150.dp)
-                .clip(CircleShape)
-                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                .clickable {
-                    pickMedia.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
-                }
-        )
-        TextField(
-            value = name,
-            onValueChange = {name = it},
-            label = { Text("Username...")},
-            singleLine = true
-        )
-        Button(onClick = {
-            CoroutineScope(Dispatchers.IO).launch {
-                database.UserDao().insertUser(User(userName = name))
-            }
-        }) {
-            Text("SET USERNAME")
+        Text(text = stringLux)
+        Text(text = stringEur)
+        Text(text = stringUsd)
+        Button(onClick = { navController.navigate("ExchangeRates") }) {
+            Text(text = "REFRESH RATES")
         }
         Button(onClick = {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

@@ -67,5 +67,7 @@ dependencies {
     androidTestImplementation("androidx.navigation:navigation-testing:$nav_version")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("io.coil-kt.coil3:coil-compose:3.0.4")
+    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("com.google.code.gson:gson:2.8.9")
     ksp("androidx.room:room-compiler:2.5.2")
 }
